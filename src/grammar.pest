@@ -1,9 +1,11 @@
 integer = @{ ASCII_DIGIT+ }
 
-first_char = _{ ASCII_ALPHA | "-" | "_" }
-char = _{ first_char | ASCII_DIGIT }
+first_char = _{ ASCII_ALPHA |  "_" }
+char = _{ first_char | "-" | ASCII_DIGIT }
 
-ident = @{ first_char ~ char* }
+keywords = _{ "if" | "then" | "else" }
+
+ident = @{ !( keywords ~ !char ) ~ first_char ~ char* }
 
 unary_minus = { "-" }
 primary = _{ ident | integer | "(" ~ expr ~ ")" }
@@ -16,8 +18,13 @@ sub = { "-" }
 mul = { "*" }
 div = { "/" }
 
-expr = { atom ~ (bin_op ~ atom)* }
+equation = { atom ~ (bin_op ~ atom)* }
+
+// maybe make this paren
+if_statement = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
+
+expr = _{ if_statement | equation }
 
 WHITESPACE = _ { " " }
 
-equation = _{ SOI ~ expr ~ EOI }
+file = _{ SOI ~ expr ~ EOI }
