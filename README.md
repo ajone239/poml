@@ -12,11 +12,10 @@ O|===|* >__/ /_/ / /_/ / /  / / /___
 A sword is a well crafted, balanced instrument.
 The pommel is the end bit of the handle often used for bludgeoning.
 
-poML is an ML-styled languaged I'm writing as a learning project.
+poML is an ML-styled language I'm writing as a learning project.
 It will be slow and note very useful, but, it'll be fun.
 
 # TODO
-
 
 - [-] Parsing
   + [-] Setup
@@ -24,27 +23,33 @@ It will be slow and note very useful, but, it'll be fun.
     * [ ] keep spans
   + [ ] Literals
     * int: `42`
+    * char: `'a'`
     * bool: `true`
     * string: `"hi"`
-  + [ ] Variables: `x`, `foo_bar`
-  + [ ] Parens: `(e)`
+  + [x] Variables: `x`, `foo_bar`
+  + [x] Parens: `(e)`
   + [ ] Application by juxtaposition: `f x y`
   + [ ] Lambda: `fun x y -> e` (desugar to nested Lam)
   + [ ] Let: `let x = e1 in e2`
   + [ ] Let rec: `let rec f x = e1 in e2`
-  + [ ] If: `if c then a else b`
+  + [x] If: `if c then a else b`
   + [ ] Binary operators and precedence: `1 + 2 * 3`, `a == b`
   + [ ] Type exprs
-    + int: 
     * int: `42: int`
     * bool: `true: boolean`
+    * char: `'a'`
     * string: `"hi" : str`
-    * lambda: `fun x y -> e: a -> b -> c` 
+    * lambda: `fun x y -> e: a -> b -> c`
   + [ ] REPL prints the AST (Debug)
   + [ ] Parser tests
 
 - [ ] Types and unification
   + [ ] Type enum (TVar, TCon, TArrow)
+  + [ ] Annotations
+      * [ ] TypeExpr to Type conversion
+      * [ ] Named type vars as unification vars (OCaml-style)
+      * [ ] Unify annotation with inferred type
+      * [ ] Errors pointing at the annotation span
   + [ ] Substitution: apply, compose
   + [ ] Fresh type variable supply
   + [ ] Unify with occurs check
