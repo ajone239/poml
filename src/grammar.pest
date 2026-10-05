@@ -23,12 +23,12 @@ lam_expr = { "fun" ~ ident+ ~ "->" ~ expr }
 let_expr = { "let" ~ ident ~ "=" ~ expr }
 let_rec_expr = { "let" ~ "rec" ~ ident ~ "=" ~ expr }
 
-app_expr = { atom ~ (equation | atom+) }
+app_expr = { atom ~ atom+ }
 
-expr = _{ app_expr | equation | if_expr | lam_expr }
+expr = _{ equation | if_expr | lam_expr }
 
 top_level = _{ expr | let_expr | let_rec_expr  }
 
 WHITESPACE = _ { " " }
 
-file = _{ SOI ~ (top_level ~ ";;")+ ~  EOI }
+file = _{ SOI ~ top_level ~ (";;" ~ (top_level ~ ";;")*)? ~  EOI }
