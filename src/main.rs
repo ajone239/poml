@@ -111,24 +111,14 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
             Expr::If { cond, texp, fexp }
         }
         Rule::app_expr => {
-            let mut pairs = pair.into_inner().map(parse_expr).map(|e| Box::new(e)).rev();
+            let mut pairs = pair.into_inner().map(parse_expr);
 
-            let last = pairs.next().unwrap();
-            let penu = pairs.next().unwrap();
+            let first = pairs.next().unwrap();
 
-            let mut app = Expr::App {
-                fexp: penu,
-                aexp: last,
-            };
-
-            for fexp in pairs {
-                app = Expr::App {
-                    fexp,
-                    aexp: Box::new(app),
-                }
-            }
-
-            app
+            pairs.fold(first, |acc, arg| Expr::App {
+                fexp: Box::new(acc),
+                aexp: Box::new(arg),
+            })
         }
         Rule::lam_expr => {
             let mut pairs = pair.into_inner().rev();
