@@ -1,16 +1,13 @@
 integer = @{ ASCII_DIGIT+ }
 
 first_char = _{ ASCII_ALPHA |  "_" }
-char = _{ first_char | "-" | ASCII_DIGIT }
+char = _{ first_char |  ASCII_DIGIT }
 
-keywords = _{ "if" | "then" | "else" }
+keywords = _{ "if" | "then" | "else" | "let" | "rec" | "fun" }
 
 ident = @{ !( keywords ~ !char ) ~ first_char ~ char* }
 
-unary_minus = { "-" }
-primary = _{ ident | integer | "(" ~ expr ~ ")" }
-
-atom = _{ unary_minus? ~ primary }
+atom = _{ ident | integer | "(" ~ expr ~ ")" }
 
 bin_op = _{ add | sub | mul | div }
 add = { "+" }
@@ -18,13 +15,20 @@ sub = { "-" }
 mul = { "*" }
 div = { "/" }
 
-equation = { atom ~ (bin_op ~ atom)* }
+operand = _{ app_expr | atom }
+equation = { operand ~ (bin_op ~ operand)* }
 
-// maybe make this paren
-if_statement = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
+if_expr = { "if" ~ expr ~ "then" ~ expr ~ "else" ~ expr }
+lam_expr = { "fun" ~ ident+ ~ "->" ~ expr }
+let_expr = { "let" ~ ident ~ "=" ~ expr }
+let_rec_expr = { "let" ~ "rec" ~ ident ~ "=" ~ expr }
 
-expr = _{ if_statement | equation }
+app_expr = { atom ~ (equation | atom+) }
+
+expr = _{ app_expr | equation | if_expr | lam_expr }
+
+top_level = _{ expr | let_expr | let_rec_expr  }
 
 WHITESPACE = _ { " " }
 
-file = _{ SOI ~ expr ~ EOI }
+file = _{ SOI ~ (top_level ~ ";;")+ ~  EOI }

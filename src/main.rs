@@ -18,7 +18,6 @@ static PRATT_PARSER: LazyLock<PrattParser<Rule>> = LazyLock::new(|| {
     PrattParser::new()
         .op(Op::infix(Rule::add, Assoc::Left) | Op::infix(Rule::sub, Assoc::Left))
         .op(Op::infix(Rule::mul, Assoc::Left) | Op::infix(Rule::div, Assoc::Left))
-        .op(Op::prefix(Rule::unary_minus))
 });
 
 fn main() -> io::Result<()> {
@@ -59,10 +58,6 @@ fn main() -> io::Result<()> {
 pub enum Expr {
     Integer(i32),
     Var(String),
-    Prefix {
-        op: Oper,
-        rhs: Box<Expr>,
-    },
     BinOp {
         lhs: Box<Expr>,
         op: Oper,
@@ -73,20 +68,37 @@ pub enum Expr {
         texp: Box<Expr>,
         fexp: Box<Expr>,
     },
+    App {
+        fexp: Box<Expr>,
+        aexp: Box<Expr>,
+    },
+    Lam {
+        arg: String,
+        body: Box<Expr>,
+    },
+    Let {
+        bind: String,
+        body: Box<Expr>,
+    },
+    LetRec {
+        bind: String,
+        body: Box<Expr>,
+    },
 }
 
 #[derive(Debug)]
 pub enum Oper {
     Add,
     Subtract,
-    UnaryMinus,
     Multiply,
     Divide,
 }
 
 fn parse_expr(pair: Pair<Rule>) -> Expr {
     match pair.as_rule() {
-        Rule::if_statement => {
+        Rule::integer => Expr::Integer(pair.as_str().parse().unwrap()),
+        Rule::ident => Expr::Var(pair.as_str().to_string()),
+        Rule::if_expr => {
             let mut pairs = pair.into_inner();
             if pairs.len() != 3 {
                 panic!("unreachable rn")
@@ -98,23 +110,77 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 
             Expr::If { cond, texp, fexp }
         }
+        Rule::app_expr => {
+            let mut pairs = pair.into_inner().map(parse_expr).map(|e| Box::new(e)).rev();
+
+            let last = pairs.next().unwrap();
+            let penu = pairs.next().unwrap();
+
+            let mut app = Expr::App {
+                fexp: penu,
+                aexp: last,
+            };
+
+            for fexp in pairs {
+                app = Expr::App {
+                    fexp,
+                    aexp: Box::new(app),
+                }
+            }
+
+            app
+        }
+        Rule::lam_expr => {
+            let mut pairs = pair.into_inner().rev();
+
+            let body = pairs.next().map(parse_expr).map(|e| Box::new(e)).unwrap();
+
+            let mut args = pairs.map(|r| r.as_str());
+
+            let frarg = args.next().unwrap();
+
+            let mut lam = Expr::Lam {
+                arg: frarg.to_string(),
+                body,
+            };
+
+            for rarg in args {
+                lam = Expr::Lam {
+                    arg: rarg.to_string(),
+                    body: Box::new(lam),
+                }
+            }
+
+            lam
+        }
+        Rule::let_expr => {
+            let mut pairs = pair.into_inner();
+            if pairs.len() != 2 {
+                panic!("unreachable rn")
+            }
+
+            let bind = pairs.next().unwrap().as_str().to_string();
+            let body = pairs.next().map(parse_expr).map(|e| Box::new(e)).unwrap();
+
+            Expr::Let { bind, body }
+        }
+        Rule::let_rec_expr => {
+            let mut pairs = pair.into_inner();
+            if pairs.len() != 2 {
+                panic!("unreachable rn")
+            }
+
+            let bind = pairs.next().unwrap().as_str().to_string();
+            let body = pairs.next().map(parse_expr).map(|e| Box::new(e)).unwrap();
+
+            Expr::LetRec { bind, body }
+        }
         Rule::equation => PRATT_PARSER
             .map_primary(|prim| match prim.as_rule() {
                 Rule::integer => Expr::Integer(prim.as_str().parse().unwrap()),
                 Rule::ident => Expr::Var(prim.as_str().to_string()),
-                Rule::expr => parse_expr(prim),
+                Rule::expr | Rule::app_expr | Rule::if_expr => parse_expr(prim),
                 rule => unreachable!("Expr::parse expected atom, found {:?}", rule),
-            })
-            .map_prefix(|op, rhs| {
-                let op = match op.as_rule() {
-                    Rule::unary_minus => Oper::UnaryMinus,
-                    rule => unreachable!("Expr::parse expected prefix operation, found {:?}", rule),
-                };
-
-                Expr::Prefix {
-                    op,
-                    rhs: Box::new(rhs),
-                }
             })
             .map_infix(|lhs, op, rhs| {
                 let op = match op.as_rule() {
@@ -140,18 +206,17 @@ fn parse_expr(pair: Pair<Rule>) -> Expr {
 fn eval(ast: &Expr) -> i32 {
     match ast {
         Expr::Integer(i) => *i,
-        Expr::Prefix { op, rhs } => match op {
-            Oper::UnaryMinus => -1 * eval(rhs),
-            _ => panic!(),
-        },
         Expr::BinOp { lhs, op, rhs } => match op {
             Oper::Add => eval(lhs) + eval(rhs),
             Oper::Subtract => eval(lhs) - eval(rhs),
             Oper::Multiply => eval(lhs) * eval(rhs),
             Oper::Divide => eval(lhs) / eval(rhs),
-            _ => panic!(),
         },
         Expr::Var(_) => todo!(),
         Expr::If { .. } => todo!(),
+        Expr::App { .. } => todo!(),
+        Expr::Lam { .. } => todo!(),
+        Expr::Let { .. } => todo!(),
+        Expr::LetRec { .. } => todo!(),
     }
 }
